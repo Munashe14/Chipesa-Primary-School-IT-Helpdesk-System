@@ -1,0 +1,17 @@
+{
+  "name": "it-help-desk-system",
+  "version": "1.0.0",
+  "description": "IT Help Desk System for Chipesa Primary School",
+  "scripts": {
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "cd server && npm run dev",
+    "client": "cd client && npm run dev",
+    "install-all": "npm install && cd server && npm install && cd ../client && npm install"
+  },
+  "keywords": ["help-desk", "it-support", "ticketing-system"],
+  "author": "Chipesa Primary School",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
