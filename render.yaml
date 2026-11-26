@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: chipesa-it-helpdesk
+    runtime: node
+    plan: starter
+    buildCommand: npm ci --prefix server && npm ci --prefix client && npm run build --prefix client
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SQLITE_PATH
+        value: /var/data/helpdesk.sqlite
+      - key: UPLOAD_DIR
+        value: /var/data/uploads
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRE
+        value: 7d
+    disk:
+      name: helpdesk-data
+      mountPath: /var/data
+      sizeGB: 1
