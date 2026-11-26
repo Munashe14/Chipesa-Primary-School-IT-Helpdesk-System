@@ -7,6 +7,17 @@ RUN npm ci --prefix client
 COPY client ./client
 RUN npm run build --prefix client
 
+FROM node:22-bookworm-slim AS server-deps
+
+WORKDIR /app
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends python3 make g++ \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY server/package*.json ./server/
+RUN npm_config_build_from_source=true npm ci --omit=dev --prefix server
+
 FROM node:22-bookworm-slim AS runtime
 
 ENV NODE_ENV=production \
@@ -16,14 +27,13 @@ ENV NODE_ENV=production \
 
 WORKDIR /app
 
-COPY server/package*.json ./server/
-RUN npm ci --omit=dev --prefix server \
-    && mkdir -p /data/uploads \
-    && chown -R node:node /data
-
+COPY --from=server-deps --chown=node:node /app/server/node_modules ./server/node_modules
 COPY --chown=node:node server ./server
 COPY --chown=node:node database ./database
 COPY --from=build --chown=node:node /app/client/dist ./client/dist
+
+RUN mkdir -p /data/uploads \
+    && chown -R node:node /data
 
 VOLUME ["/data"]
 EXPOSE 5000
