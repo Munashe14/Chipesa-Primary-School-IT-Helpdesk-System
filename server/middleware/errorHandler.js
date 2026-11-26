@@ -19,8 +19,8 @@ const errorHandler = (err, req, res, next) => {
     return res.status(401).json({ message: 'Token expired' });
   }
 
-  // MySQL duplicate entry error
-  if (err.code === 'ER_DUP_ENTRY') {
+  // Duplicate entry errors from MySQL or SQLite
+  if (['ER_DUP_ENTRY', 'SQLITE_CONSTRAINT_UNIQUE', 'SQLITE_CONSTRAINT_PRIMARYKEY'].includes(err.code)) {
     return res.status(400).json({ message: 'Duplicate entry detected' });
   }
 

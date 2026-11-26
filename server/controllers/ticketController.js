@@ -300,10 +300,10 @@ const updateTicket = async (req, res) => {
 
         // Update timestamps based on status
         if (status === 'Resolved' && !currentTicket.resolved_at) {
-          updates.push('resolved_at = NOW()');
+          updates.push('resolved_at = CURRENT_TIMESTAMP');
         }
         if (status === 'Closed' && !currentTicket.closed_at) {
-          updates.push('closed_at = NOW()');
+          updates.push('closed_at = CURRENT_TIMESTAMP');
         }
 
         // Notify reporter
@@ -329,7 +329,7 @@ const updateTicket = async (req, res) => {
     values.push(id);
 
     await pool.query(
-      `UPDATE tickets SET ${updates.join(', ')}, updated_at = NOW() WHERE id = ?`,
+      `UPDATE tickets SET ${updates.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
       values
     );
 
@@ -368,14 +368,31 @@ const assignTechnician = async (req, res) => {
 
     const ticket = tickets[0];
 
+    if (technicianId !== null) {
+      const [technicians] = await pool.query(`
+        SELECT u.id
+        FROM users u
+        JOIN roles r ON u.role_id = r.id
+        WHERE u.id = ? AND u.is_active = TRUE AND r.name = 'IT Technician'
+      `, [technicianId]);
+
+      if (technicians.length === 0) {
+        return res.status(400).json({ message: 'Selected user is not an active IT Technician' });
+      }
+    }
+
+    if (ticket.assigned_technician_id === technicianId) {
+      return res.json({ message: 'Ticket is already assigned to this technician' });
+    }
+
     await pool.query(
-      'UPDATE tickets SET assigned_technician_id = ?, updated_at = NOW() WHERE id = ?',
+      'UPDATE tickets SET assigned_technician_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
       [technicianId, id]
     );
 
     await addTicketHistory(id, req.user.id, 'Assigned', 'assigned_technician_id', ticket.assigned_technician_id, technicianId);
 
-    // Notify technician
+    // Notify the new assignee
     if (technicianId) {
       await createNotification(
         technicianId,
@@ -407,14 +424,14 @@ const updateStatus = async (req, res) => {
 
     const ticket = tickets[0];
 
-    const updates = ['status = ?', 'updated_at = NOW()'];
+    const updates = ['status = ?', 'updated_at = CURRENT_TIMESTAMP'];
     const values = [status];
 
     if (status === 'Resolved' && !ticket.resolved_at) {
-      updates.push('resolved_at = NOW()');
+      updates.push('resolved_at = CURRENT_TIMESTAMP');
     }
     if (status === 'Closed' && !ticket.closed_at) {
-      updates.push('closed_at = NOW()');
+      updates.push('closed_at = CURRENT_TIMESTAMP');
     }
 
     values.push(id);

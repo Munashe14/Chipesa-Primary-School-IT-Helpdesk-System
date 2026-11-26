@@ -91,6 +91,10 @@ const ticketUpdateSchema = Joi.object({
   resolutionNotes: Joi.string().allow('', null)
 });
 
+const assignTechnicianSchema = Joi.object({
+  technicianId: Joi.number().integer().allow(null).required()
+});
+
 // Comment validation schema
 const commentSchema = Joi.object({
   comment: Joi.string().min(1).required(),
@@ -107,5 +111,6 @@ module.exports = {
   updateUserSchema,
   ticketSchema,
   ticketUpdateSchema,
+  assignTechnicianSchema,
   commentSchema
 };

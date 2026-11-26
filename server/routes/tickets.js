@@ -3,7 +3,7 @@ const router = express.Router();
 const ticketController = require('../controllers/ticketController');
 const { auth, authorize } = require('../middleware/auth');
 const validate = require('../middleware/validate');
-const { ticketSchema, ticketUpdateSchema, commentSchema } = require('../utils/validationSchemas');
+const { ticketSchema, ticketUpdateSchema, assignTechnicianSchema, commentSchema } = require('../utils/validationSchemas');
 
 // All routes require authentication
 router.use(auth);
@@ -23,8 +23,8 @@ router.put('/:id', validate(ticketUpdateSchema), ticketController.updateTicket);
 // Delete ticket (Admin only)
 router.delete('/:id', authorize('Administrator'), ticketController.deleteTicket);
 
-// Assign technician to ticket (Admin or Technician)
-router.put('/:id/assign', ticketController.assignTechnician);
+// Assign technician to ticket (Admin only)
+router.put('/:id/assign', authorize('Administrator'), validate(assignTechnicianSchema), ticketController.assignTechnician);
 
 // Update ticket status (Technician or Admin)
 router.put('/:id/status', ticketController.updateStatus);

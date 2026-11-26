@@ -100,13 +100,13 @@ const getPerformanceReport = async (req, res) => {
     let query = `
       SELECT 
         u.id,
-        CONCAT(u.first_name, ' ', u.last_name) as technician_name,
+        u.first_name || ' ' || u.last_name as technician_name,
         COUNT(t.id) as total_assigned,
         SUM(CASE WHEN t.status = 'Resolved' THEN 1 ELSE 0 END) as resolved_count,
         SUM(CASE WHEN t.status = 'In Progress' THEN 1 ELSE 0 END) as in_progress_count,
         SUM(CASE WHEN t.status = 'Pending' THEN 1 ELSE 0 END) as pending_count,
         SUM(CASE WHEN t.status = 'Overdue' THEN 1 ELSE 0 END) as overdue_count,
-        AVG(TIMESTAMPDIFF(HOUR, t.created_at, COALESCE(t.resolved_at, NOW()))) as avg_resolution_hours
+        AVG((julianday(COALESCE(t.resolved_at, CURRENT_TIMESTAMP)) - julianday(t.created_at)) * 24) as avg_resolution_hours
       FROM users u
       LEFT JOIN tickets t ON u.id = t.assigned_technician_id
       WHERE u.role_id = (SELECT id FROM roles WHERE name = 'IT Technician')
@@ -147,8 +147,8 @@ const exportPDF = async (req, res) => {
       SELECT t.*, 
              c.name as category_name, 
              p.name as priority_name,
-             CONCAT(r.first_name, ' ', r.last_name) as reporter_name,
-             CONCAT(tech.first_name, ' ', tech.last_name) as technician_name
+             r.first_name || ' ' || r.last_name as reporter_name,
+             tech.first_name || ' ' || tech.last_name as technician_name
       FROM tickets t
       JOIN categories c ON t.category_id = c.id
       JOIN priorities p ON t.priority_id = p.id
@@ -232,8 +232,8 @@ const exportExcel = async (req, res) => {
       SELECT t.*, 
              c.name as category_name, 
              p.name as priority_name,
-             CONCAT(r.first_name, ' ', r.last_name) as reporter_name,
-             CONCAT(tech.first_name, ' ', tech.last_name) as technician_name
+             r.first_name || ' ' || r.last_name as reporter_name,
+             tech.first_name || ' ' || tech.last_name as technician_name
       FROM tickets t
       JOIN categories c ON t.category_id = c.id
       JOIN priorities p ON t.priority_id = p.id

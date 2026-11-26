@@ -21,8 +21,11 @@ const TicketDetails = () => {
   const [ticket, setTicket] = useState(null)
   const [comments, setComments] = useState([])
   const [history, setHistory] = useState([])
+  const [technicians, setTechnicians] = useState([])
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(false)
+  const [savingAssignment, setSavingAssignment] = useState(false)
+  const [assignedTechnicianId, setAssignedTechnicianId] = useState('')
   const [newComment, setNewComment] = useState('')
   const [status, setStatus] = useState('')
   const [resolutionNotes, setResolutionNotes] = useState('')
@@ -33,10 +36,17 @@ const TicketDetails = () => {
     fetchHistory()
   }, [id])
 
+  useEffect(() => {
+    if (user?.roleName === 'Administrator') {
+      fetchTechnicians()
+    }
+  }, [user])
+
   const fetchTicketDetails = async () => {
     try {
       const response = await api.get(`/tickets/${id}`)
       setTicket(response.data)
+      setAssignedTechnicianId(response.data.assigned_technician_id?.toString() || '')
       setStatus(response.data.status)
       setResolutionNotes(response.data.resolution_notes || '')
     } catch (error) {
@@ -44,6 +54,32 @@ const TicketDetails = () => {
       navigate('/tickets')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchTechnicians = async () => {
+    try {
+      const response = await api.get('/users')
+      setTechnicians(response.data.filter(
+        (candidate) => candidate.role_name === 'IT Technician' && candidate.is_active
+      ))
+    } catch (error) {
+      toast.error('Failed to load technicians')
+    }
+  }
+
+  const handleAssignTechnician = async () => {
+    setSavingAssignment(true)
+    try {
+      await api.put(`/tickets/${id}/assign`, {
+        technicianId: assignedTechnicianId ? Number(assignedTechnicianId) : null
+      })
+      toast.success('Technician assignment updated')
+      await Promise.all([fetchTicketDetails(), fetchHistory()])
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to assign technician')
+    } finally {
+      setSavingAssignment(false)
     }
   }
 
@@ -129,6 +165,7 @@ const TicketDetails = () => {
   }
 
   const canEdit = user?.roleName === 'IT Technician' || user?.roleName === 'Administrator'
+  const canAssign = user?.roleName === 'Administrator'
 
   return (
     <div className="space-y-6">
@@ -203,6 +240,35 @@ const TicketDetails = () => {
             </div>
           )}
         </div>
+
+        {canAssign && (
+          <div className="mt-6 pt-6 border-t">
+            <h3 className="font-medium text-gray-900 mb-4">Assign to Technician</h3>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <select
+                value={assignedTechnicianId}
+                onChange={(event) => setAssignedTechnicianId(event.target.value)}
+                className="input flex-1"
+                aria-label="Assign ticket to technician"
+              >
+                <option value="">Unassigned</option>
+                {technicians.map((technician) => (
+                  <option key={technician.id} value={technician.id}>
+                    {technician.first_name} {technician.last_name}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={handleAssignTechnician}
+                disabled={savingAssignment || assignedTechnicianId === (ticket.assigned_technician_id?.toString() || '')}
+                className="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {savingAssignment ? 'Saving...' : 'Save Assignment'}
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Resolution Notes */}
         {ticket.resolution_notes && (

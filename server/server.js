@@ -3,7 +3,10 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
+const fs = require('fs');
+const path = require('path');
 require('dotenv').config();
+const database = require('./config/database');
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -22,6 +25,10 @@ const errorHandler = require('./middleware/errorHandler');
 const notFound = require('./middleware/notFound');
 
 const app = express();
+const uploadDirectory = path.resolve(process.env.UPLOAD_DIR || path.join(__dirname, 'uploads'));
+const clientBuildDirectory = path.join(__dirname, '../client/dist');
+
+fs.mkdirSync(uploadDirectory, { recursive: true });
 
 // Security middleware
 app.use(helmet());
@@ -48,7 +55,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Static files for uploads
-app.use('/uploads', express.static('uploads'));
+app.use('/uploads', express.static(uploadDirectory));
 
 // API routes
 app.use('/api/auth', authRoutes);
@@ -67,14 +74,28 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
+app.use('/api', notFound);
+app.use(express.static(clientBuildDirectory));
+app.get('*', (req, res, next) => {
+  res.sendFile(path.join(clientBuildDirectory, 'index.html'), (error) => {
+    if (error) next(error);
+  });
+});
+
 // Error handling middleware
-app.use(notFound);
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT} in ${process.env.NODE_ENV} mode`);
-});
+database.ready
+  .then(() => {
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
+    });
+  })
+  .catch((error) => {
+    console.error('Application startup failed:', error);
+    process.exitCode = 1;
+  });
 
 module.exports = app;

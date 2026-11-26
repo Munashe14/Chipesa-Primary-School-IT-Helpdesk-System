@@ -104,7 +104,7 @@ const login = async (req, res) => {
 
     // Update last login
     await pool.query(
-      'UPDATE users SET last_login = NOW() WHERE id = ?',
+      'UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?',
       [user.id]
     );
 
@@ -189,7 +189,7 @@ const resetPassword = async (req, res) => {
 
     // Check if token exists in database and is not expired
     const [tokens] = await pool.query(
-      'SELECT * FROM password_reset_tokens WHERE token = ? AND expires_at > NOW()',
+      "SELECT * FROM password_reset_tokens WHERE token = ? AND expires_at > CURRENT_TIMESTAMP",
       [token]
     );
 

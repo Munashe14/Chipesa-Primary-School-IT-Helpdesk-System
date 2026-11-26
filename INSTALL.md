@@ -1,30 +1,16 @@
-# How to Run This Project on Another Computer
+# Installation
 
-## Requirements
-- Windows 10 or 11
-- XAMPP installed in `C:\xampp`
-- Node.js and npm installed
+## Local setup
 
-## Steps
-1. Copy the whole project folder to the new computer.
-2. Install XAMPP if it is not already installed.
-3. Start MySQL by running the launcher file:
-   - Double-click `launch-app.bat`
-4. The script will:
-   - check for XAMPP
-   - start XAMPP services
-   - install npm dependencies if needed
-   - create the `helpdesk_db` database if it does not exist
-   - launch the backend and frontend
-   - open the app in the browser
+1. Install Node.js 20 or newer.
+2. Run `npm run install-all` from the project root.
+3. Create `server/.env` and set `JWT_SECRET` to a long, random value.
+4. Run `npm run dev`, then open `http://localhost:5173`.
 
-## Browser URL
-- Frontend: http://localhost:5173
-- Backend health check: http://localhost:5000/api/health
+The API initializes `database/helpdesk.sqlite` and loads demonstration data on first startup. MySQL and XAMPP are not required.
 
-## Important note
-The app expects MySQL to use the default XAMPP root user with no password.
-If your XAMPP installation uses a different MySQL password, update the database configuration in `server/config/database.js` before running the app.
+## Render demonstration deployment
 
-## If you want the app to run again later
-Just double-click `launch-app.bat` again. It will skip the database setup if the database already exists.
+Push the repository to GitHub, then create a Render Blueprint from it. The included `render.yaml` builds and serves the frontend and API as one service and stores the SQLite database and uploads on a persistent disk. A paid Starter service is required for the disk; Render's free web services use ephemeral storage.
+
+For the demo accounts and additional setup notes, see [README.md](./README.md).

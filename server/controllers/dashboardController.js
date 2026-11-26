@@ -162,11 +162,11 @@ const getCharts = async (req, res) => {
     // Monthly ticket trends (last 6 months)
     const [monthlyData] = await pool.query(`
       SELECT 
-        DATE_FORMAT(created_at, '%Y-%m') as month,
+        strftime('%Y-%m', created_at) as month,
         COUNT(*) as count
       FROM tickets
-      WHERE created_at >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
-      GROUP BY DATE_FORMAT(created_at, '%Y-%m')
+      WHERE created_at >= datetime('now', '-6 months')
+      GROUP BY strftime('%Y-%m', created_at)
       ORDER BY month ASC
     `);
 
@@ -175,10 +175,10 @@ const getCharts = async (req, res) => {
       const [technicianData] = await pool.query(`
         SELECT 
           u.id,
-          CONCAT(u.first_name, ' ', u.last_name) as name,
+          u.first_name || ' ' || u.last_name as name,
           COUNT(t.id) as total_assigned,
           SUM(CASE WHEN t.status = 'Resolved' THEN 1 ELSE 0 END) as resolved,
-          AVG(TIMESTAMPDIFF(HOUR, t.created_at, COALESCE(t.resolved_at, NOW()))) as avg_resolution_hours
+          AVG((julianday(COALESCE(t.resolved_at, CURRENT_TIMESTAMP)) - julianday(t.created_at)) * 24) as avg_resolution_hours
         FROM users u
         LEFT JOIN tickets t ON u.id = t.assigned_technician_id
         WHERE u.role_id = (SELECT id FROM roles WHERE name = 'IT Technician')
